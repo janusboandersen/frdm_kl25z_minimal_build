@@ -1,0 +1,96 @@
+{
+
+  // Use LinkerScript extension to syntax highlight
+  "files.associations": {
+    "*.ld": "linkerscript"
+  }
+
+  // tree indent – more separation
+  "workbench.tree.indent": 16,
+
+  // always show indent guides
+  "workbench.tree.renderIndentGuides": "always",
+
+  // color of indent guides
+  "workbench.colorCustomizations": {
+    "tree.indentGuidesStroke": "#888888",
+    "tree.inactiveIndentGuidesStroke": "#444444", 
+    // you can also tweak list hover/focus/selection colors
+    "list.hoverBackground": "#333333",
+    "list.activeSelectionBackground": "#005f5f",
+    "list.activeSelectionForeground": "#ffffff"
+  },
+
+  "editor.suggest.insertMode": "insert",
+  "[cpp]": {
+    "editor.suggest.insertMode": "insert"
+  }
+
+  // icon theme – pick one that distinguishes clearly
+  "workbench.iconTheme": "vscode-great-icons",
+  "files.associations": {
+    "queue": "cpp",
+    "__bit_reference": "cpp",
+    "__hash_table": "cpp",
+    "__locale": "cpp",
+    "__node_handle": "cpp",
+    "__split_buffer": "cpp",
+    "__tree": "cpp",
+    "__verbose_abort": "cpp",
+    "any": "cpp",
+    "array": "cpp",
+    "bitset": "cpp",
+    "cctype": "cpp",
+    "charconv": "cpp",
+    "clocale": "cpp",
+    "cmath": "cpp",
+    "complex": "cpp",
+    "condition_variable": "cpp",
+    "csignal": "cpp",
+    "cstdarg": "cpp",
+    "cstdint": "cpp",
+    "cstdio": "cpp",
+    "cstdlib": "cpp",
+    "cstring": "cpp",
+    "ctime": "cpp",
+    "cwchar": "cpp",
+    "cwctype": "cpp",
+    "deque": "cpp",
+    "execution": "cpp",
+    "memory": "cpp",
+    "forward_list": "cpp",
+    "fstream": "cpp",
+    "initializer_list": "cpp",
+    "iomanip": "cpp",
+    "ios": "cpp",
+    "iosfwd": "cpp",
+    "iostream": "cpp",
+    "istream": "cpp",
+    "limits": "cpp",
+    "list": "cpp",
+    "locale": "cpp",
+    "map": "cpp",
+    "mutex": "cpp",
+    "new": "cpp",
+    "optional": "cpp",
+    "print": "cpp",
+    "ratio": "cpp",
+    "set": "cpp",
+    "span": "cpp",
+    "sstream": "cpp",
+    "stack": "cpp",
+    "stdexcept": "cpp",
+    "streambuf": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "typeinfo": "cpp",
+    "unordered_map": "cpp",
+    "unordered_set": "cpp",
+    "variant": "cpp",
+    "vector": "cpp",
+    "algorithm": "cpp",
+    "type_traits": "cpp",
+    "typeindex": "cpp"
+  }
+
+}
