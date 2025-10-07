@@ -85,87 +85,7 @@ This project implements the sources for "bring-up" and "application", and the li
 
 <!-- BEGIN DIAGRAM -->
 ```Figure 1: Build pipeline```
-```mermaid
-flowchart TD
-  %% ---- Build setup ----
-  subgraph build_setup["Build configuration (CMake)"]
-    fm["cmake/firmware-management.cmake"]
-    tc["cmake/toolchain-arm-none-eabi.cmake"]
-    cl["CMakeLists.txt"]
-    fm --> cl
-    tc --> cl
-  end
-
-  %% ---- Bring-up sources ----
-  subgraph sources["Bring-up sources"]
-    startup_s["startup/startup_kl25z.S"]
-    sysinit_cpp["system/system_MKL25Z4.cpp"]
-  end
-  
-  %% ---- User application ----
-  subgraph app["Application sources"]
-    main_c["src/main.c"]
-  end
-
-  %% ---- Compiler ----
-  compiler["ARM GNU Compiler (arm-none-eabi-gcc)"]
-
-  subgraph objects["Object files (.o)"]
-    startup_o["startup_kl25.o"]
-    sysinit_o[system_MKL25Z4.o]
-    main_o["main.o"]
-  end
-
-  %% ---- Compiler runtime support objects ----
-  subgraph crt_objs["Static compiler runtime support"]
-    crti["crti.o"]
-    crtbegin["crtbegin.o"]
-    crtend["crtend.o"]
-    crtn["crtn.o"]
-  end
-
-  %% ---- Libraries ----
-  subgraph libs["Libraries (static)"]
-    libstdcpp["libstdc++_nano.a"]
-    libsupc["libsupc++.a"]
-    libc_nano["libc_nano.a"]
-    libm_nano["libm_nano.a"]
-    libnosys["libnosys.a"]
-    libgcc["libgcc.a"]
-  end
-
-  %% ---- Link stage ----
-  linker["Linker (arm-none-eabi-ld)"]
-  lds["Linker script (.ld)"]
-
-  %% ---- Outputs ----
-  elf["ELF file (firmware)"]
-  mapfile["Map file (firmware.map)"]
-  tools["ARM binutils (objcopy/objdump)"]
-  bin["Binary (firmware.bin)"]
-  hex["Hex (firmware.hex)"]
-
-  %% -- Target
-  pyocd["PyOCD"]
-  kl25z["FRDM-KL25Z"]
-
-  %% ---- Flow ----
-  cl --> compiler
-  sources --> compiler
-  app --> compiler
-  compiler --> objects
-  objects --> linker
-  lds --> linker
-  crt_objs --> linker
-  libs --> linker
-  linker --> elf
-  linker --> mapfile
-  elf --> tools
-  tools --> bin
-  tools --> hex
-  bin --> pyocd
-  pyocd --> kl25z
-```
+@@DIAGRAM1@@
 <!-- END DIAGRAM -->
 
 
@@ -247,37 +167,7 @@ It is annotated with symbols demarkating memory regions used in the startup code
 Consult the next section (and the script file) for an overview of symbols that are required by libraries.
 
 <!-- BEGIN DIAGRAM -->
-```
-Figure 2: Target SRAM memory layout after bring-up
-──────────────────────────────────────────────────────────────────────────────────────────────────────
-   KL25Z SRAM (16 KB)                                    Physical Addr.    VMA Addr.      LMA Address
-──────────────────────────────────────────────────────────────────────────────────────────────────────
-   ┌──────────────────────────────────────────────────┐  0x1FFF_F000       __data_start   __etext
-   │ .data                                            │
-   │ - Statically allocated pre-init. variables       │
-   │ - Copied from flash by startup                   │
-   └──────────────────────────────────────────────────┘  <-                __data_end__
-   ┌──────────────────────────────────────────────────┐  <-                __bss_start__
-   │ .bss                                             │
-   │ - Statically allocated uninit. variables         │
-   │ - Cleared to 0 by startup code                   │
-   └──────────────────────────────────────────────────┘  <-                __bss_end__
-   ┌──────────────────────────────────────────────────┐  <-                __HeapBase
-   │ .heap                                            │
-   │ - Managed by malloc/new if dynamic memory used   │
-   │ - Heap grows toward higher addr.                 │
-   └──────────────────────────────────────────────────┘  <-                __HeapLimit
-   ┌──────────────────────────────────────────────────┐ 
-   │ Potentially unused space                         │
-   └──────────────────────────────────────────────────┘              
-   ┌──────────────────────────────────────────────────┐  <-                __StackLimit
-   │ Stack                                            │
-   │ - Local variables and function frames            │
-   │ - 8-byte aligned for for call convention         │
-   │ - Stack grows toward lower addr.                 │
-   └──────────────────────────────────────────────────┘ 0x2000_2FFF        __StackBase
-──────────────────────────────────────────────────────────────────────────────────────────────────────
-```
+@@DIAGRAM2@@
 <!-- END DIAGRAM -->
 
 #### Target Flash memory layout
@@ -286,100 +176,14 @@ It also contains various constructs for runtime mechanics, which are outside the
 The symbol and section contract is in the next section.
 
 <!-- BEGIN DIAGRAM -->
-```
-Figure 3: Target Flash memory layout to send to device
-────────────────────────────────────────────────────────────────────────────────────
-    KL25Z FLASH (128 KB)                                Physical Addr.  LMA Address 
-────────────────────────────────────────────────────────────────────────────────────
-   ┌────────────────────────────────────────────────┐   0x0000_0000     __isr_vector
-   │ Vector Table                                   │
-   │   - Initial MSP (word 0)                       │
-   │   - Reset_Handler (word 1)                     │
-   │   - Exception handlers / IRQ vectors           │
-   └────────────────────────────────────────────────┘
-   ┌────────────────────────────────────────────────┐   0x0000_00400
-   │ Flash configuration field                      │
-   │   - Security flags (16B)                       │                        
-   └────────────────────────────────────────────────┘   0x0000_00410
-   ┌────────────────────────────────────────────────┐
-   │ .text                                          │
-   │   - Executable code (XIP)                      │
-   └────────────────────────────────────────────────┘       
-   ┌────────────────────────────────────────────────┐
-   │ .rodata                                        │
-   │   - Read-only constants, literals              │
-   └────────────────────────────────────────────────┘
-   ┌────────────────────────────────────────────────┐
-   │ Various runtime mechanics                      │
-   │   - EHABI32, C++ support                       │
-   └────────────────────────────────────────────────┘
-   ┌────────────────────────────────────────────────┐ <-                __etext
-   │ .data                                          │
-   │   - Copied -> SRAM at runtime                  │
-   └────────────────────────────────────────────────┘
-   ┌────────────────────────────────────────────────┐
-   │ Unused / Reserved Flash                        │
-   │   - Free space for future code                 │
-   └────────────────────────────────────────────────┘   0x2000_2FFF                            
-────────────────────────────────────────────────────────────────────────────────────
-```
+@@DIAGRAM3@@
 <!-- END DIAGRAM -->
 
 
 #### ABI compatibility: Flow
 
 <!-- BEGIN DIAGRAM -->
-```
-Figure 4: ABI contracts
-────────────────────────────────────────────────────────────
-    CONTRACT FLOW: CM0+ boot
-────────────────────────────────────────────────────────────
-   ┌────────────────────────────────────────────────────┐
-   │ Cortex-M0+                                         │
-   │  - Fetches SP, PC from 0x0000_0000                 │
-   │  - Begins execution at Reset_Handler               │
-   │  - Expects valid vector table in Flash             │
-   └────────────────────────────────────────────────────┘
-                    │
-                    │  (requires)
-                    ▼
-   ┌────────────────────────────────────────────────────┐
-   │ Linker Script (kl25z.ld)                           │
-   │  - Defines FLASH & SRAM regions                    │
-   │  - Places .isr_vector @ 0x0000_0000                │
-   │  - Emits symbols: __StackTop, etc.                 │
-   │  - Resolves all absolute addresses                 │
-   └────────────────────────────────────────────────────┘
-                    │
-                    │  (startup reads symbols)
-                    ▼
-   ┌────────────────────────────────────────────────────┐
-   │ Startup (Reset_Handler, startup_kl25z.S)           │
-   │  - Copies .data from Flash to SRAM                 │
-   │  - Zeros .bss                                      │
-   │  - Initializes MSP, VTOR                           │
-   │  - Calls SystemInit(), __libc_init_array(), main() │
-   └────────────────────────────────────────────────────┘
-                    │
-                    │  (calls)
-                    ▼
-   ┌────────────────────────────────────────────────────┐
-   │ C, C++ Runtime Libraries                           │
-   │  - Provide __libc_init_array, _sbrk, malloc, etc.  │
-   │  - Assume initialized .data/.bss and valid stack   │
-   │  - Rely on linker-defined symbols for boundaries   │
-   └────────────────────────────────────────────────────┘
-                    │
-                    │  (hands control to)
-                    ▼
-   ┌────────────────────────────────────────────────────┐
-   │ User Application                                   │
-   │  - Implements main()                               │
-   │  - Runs on configured clock tree                   │
-   │  - May call drivers, stdlib, or CMSIS APIs         │
-   └────────────────────────────────────────────────────┘
-────────────────────────────────────────────────────────────
-```
+@@DIAGRAM4@@
 <!-- END DIAGRAM -->
 
 #### ABI compatibility: Expectations between linked objects
@@ -500,53 +304,7 @@ Finally, the firmware is flashed to the device.
 The expected operation of the device is verified.
 
 <!-- BEGIN DIAGRAM -->
-```
-Figure 5: Build transformations
-────────────────────────────────────────────────────────────────
-    BUILD CHAIN: Sources to device
-────────────────────────────────────────────────────────────────
-   ┌────────────────────────────────────────────────────────┐
-   │ Source Files (.S/.c/.cpp)                              │   
-   │  • Relocatable sections: .text, .data, .bss            │
-   │  • No fixed addresses yet                              │
-   └────────────────────────────────────────────────────────┘
-                    │
-                    │  arm-none-eabi-gcc / g++
-                    ▼
-   ┌────────────────────────────────────────────────────────┐
-   │ Object Files (.o)                                      │
-   │  • Each has local symbol table, relocations            │
-   │  • Still no fixed memory mapping                       │
-   └────────────────────────────────────────────────────────┘
-                    │
-                    │  arm-none-eabi-ld (via g++ -T kl25z.ld)
-                    │  Uses linker script to assign addresses
-                    ▼
-   ┌────────────────────────────────────────────────────────┐
-   │ Executable and Linkable Format (ELF)                   │
-   │  • Absolute addresses resolved (via MEMORY + SECTIONS) │
-   │  • Includes vector table, symbols                      │
-   │  • Used for debugging and conversion                   │
-   └────────────────────────────────────────────────────────┘
-                    │
-                    │  arm-none-eabi-objcopy
-                    ▼
-   ┌────────────────────────────────────────────────────────┐
-   │ Binary / Hex Image (.bin/.hex)                         │
-   │  • Flattened memory image (Flash layout only)          │
-   │  • No symbol or relocation data                        │
-   └────────────────────────────────────────────────────────┘
-                    │
-                    │  pyocd flash firmware.bin
-                    ▼
-   ┌────────────────────────────────────────────────────────┐
-   │ Physical Flash on KL25Z                                │
-   │  • At reset, core reads vector table                   │
-   │  • Begins execution from Reset_Handler                 │
-   │  - Hands off to main()                                 │
-   └────────────────────────────────────────────────────────┘
-────────────────────────────────────────────────────────────────
-```
+@@DIAGRAM5@@
 <!-- END DIAGRAM -->
 
 ### Inspecting and verification of the ELF (req. 1.3)
@@ -563,9 +321,8 @@ To be done.
 ### Debugging with GDB
 To be done.
 
-## Final verification
+## Verification
 To be done.
-
 
 ## Documentation and references (req. 8.1-8.2)
 #### Documentation for the hardware

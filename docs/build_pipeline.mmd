@@ -1,0 +1,79 @@
+flowchart TD
+  %% ---- Build setup ----
+  subgraph build_setup["Build configuration (CMake)"]
+    fm["cmake/firmware-management.cmake"]
+    tc["cmake/toolchain-arm-none-eabi.cmake"]
+    cl["CMakeLists.txt"]
+    fm --> cl
+    tc --> cl
+  end
+
+  %% ---- Bring-up sources ----
+  subgraph sources["Bring-up sources"]
+    startup_s["startup/startup_kl25z.S"]
+    sysinit_cpp["system/system_MKL25Z4.cpp"]
+  end
+  
+  %% ---- User application ----
+  subgraph app["Application sources"]
+    main_c["src/main.c"]
+  end
+
+  %% ---- Compiler ----
+  compiler["ARM GNU Compiler (arm-none-eabi-gcc)"]
+
+  subgraph objects["Object files (.o)"]
+    startup_o["startup_kl25.o"]
+    sysinit_o[system_MKL25Z4.o]
+    main_o["main.o"]
+  end
+
+  %% ---- Compiler runtime support objects ----
+  subgraph crt_objs["Static compiler runtime support"]
+    crti["crti.o"]
+    crtbegin["crtbegin.o"]
+    crtend["crtend.o"]
+    crtn["crtn.o"]
+  end
+
+  %% ---- Libraries ----
+  subgraph libs["Libraries (static)"]
+    libstdcpp["libstdc++_nano.a"]
+    libsupc["libsupc++.a"]
+    libc_nano["libc_nano.a"]
+    libm_nano["libm_nano.a"]
+    libnosys["libnosys.a"]
+    libgcc["libgcc.a"]
+  end
+
+  %% ---- Link stage ----
+  linker["Linker (arm-none-eabi-ld)"]
+  lds["Linker script (.ld)"]
+
+  %% ---- Outputs ----
+  elf["ELF file (firmware)"]
+  mapfile["Map file (firmware.map)"]
+  tools["ARM binutils (objcopy/objdump)"]
+  bin["Binary (firmware.bin)"]
+  hex["Hex (firmware.hex)"]
+
+  %% -- Target
+  pyocd["PyOCD"]
+  kl25z["FRDM-KL25Z"]
+
+  %% ---- Flow ----
+  cl --> compiler
+  sources --> compiler
+  app --> compiler
+  compiler --> objects
+  objects --> linker
+  lds --> linker
+  crt_objs --> linker
+  libs --> linker
+  linker --> elf
+  linker --> mapfile
+  elf --> tools
+  tools --> bin
+  tools --> hex
+  bin --> pyocd
+  pyocd --> kl25z
