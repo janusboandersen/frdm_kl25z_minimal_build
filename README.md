@@ -64,6 +64,8 @@ The goal of the project is to implement just enough structure to get a solid, sc
 - Add `SystemInit()` and clock configuration.
 - Write small main with blinky, without CMSIS
 - Test on device
+- Verify
+- QEMU
 
 #### Other sources to read
 - https://nicopinkowski.wordpress.com/fundamentals/
@@ -75,10 +77,10 @@ The goal of the project is to implement just enough structure to get a solid, sc
 ## Build pipeline (req. 1.1 - 1.3)
 
 The build pipeline is based on the ARM GNU Toolchain. 
-Requried components and build flow are detailed in the diagram.
+Minimal components and build flow are detailed in the diagram.
 Steps to obtain the build tools are described in the following section.
 
-`CMakeLists.txt` declares of how the project is built. 
+`CMakeLists.txt` declares how the project is to be built. 
 The configuration in `cmake/toolchain-arm-none-eabi.cmake` is read early by CMake to choose compilers and set flags.
 
 This project implements the sources for "bring-up" and "application", and the linker script.
@@ -271,7 +273,7 @@ Figure 2: Target SRAM memory layout after bring-up
    │ Potentially unused space                         │
    └──────────────────────────────────────────────────┘              
    ┌──────────────────────────────────────────────────┐  <-                __StackLimit
-   │ Stack                                            │
+   │ .stack                                           │
    │ - Local variables and function frames            │
    │ - 8-byte aligned for for call convention         │
    │ - Stack grows toward lower addr.                 │
@@ -389,7 +391,9 @@ The table below is not exhaustive. Other libraries will likely require other sym
 | Symbol/section            | Purpose                                   | Emitted by        | Excpected by                          |
 |---------------------------|-------------------------------------------|-------------------|---------------------------------------|
 | `.isr_vector`             | Vector table (MSP init., handlers)        | startup_kl25z.S   | kl25z.ld (place), CM0+ on reset (use) |
+| `__isr_vector`            | Debuggable symbol pointing at vector tabl.| startup_kl25z.S   | kl25z.ld (place)                      |
 | `.FlashConfig`            | Flash configuration (NXP specific)        | startup_kl25z.S   | kl25z.ld (place), Boot ROM (use)      |
+| `__boot_marker`           | Debuggable magic value (0xA5A5A5A5)       | startup_kl25z.S   | kl25z.ld (place), Debugger (inspect)  |
 | `SystemInit`              | Clocktree configuration, WDT, etc.        | system_MKL25Z4.cpp| startup_kl25z.S (to call)             |
 | `__libc_init_array`       | Static object initialization              | libc              | startup_kl25z.S (to call)             |
 | `main`                    | User application entrypoint               | main.cpp          | startup_kl25z.S (to call)             |
@@ -436,7 +440,7 @@ The actual role of the startup code was outlined in the previous sections; To de
 The file is similar in spirit to something like `crt0.o` for a Linux distributable.
 
 #### Boot sequence and bring-up
-- The boot sequence is described in RefManM 6.3.3.
+- The boot sequence is described in RefMan 6.3.3.
 - After the system is released from reset (power, default clocking, flash init), the CM0+ bootstraps itself by starting execution at word 1.
 - Our provided startup code (Reset_Handler) is vectored at word 1, and will then run to prepare the right context in SRAM.
 
@@ -549,7 +553,7 @@ Figure 5: Build transformations
 ```
 <!-- END DIAGRAM -->
 
-### Inspecting and verification of the ELF (req. 1.3)
+### Inspection and verification of the ELF (req. 1.3)
 | Activity                  | Command                                                       |
 |---------------------------|---------------------------------------------------------------|
 | View sections             | arm-none-eabi-readelf -S build/firmware                       |
@@ -563,9 +567,8 @@ To be done.
 ### Debugging with GDB
 To be done.
 
-## Final verification
+## Verification
 To be done.
-
 
 ## Documentation and references (req. 8.1-8.2)
 #### Documentation for the hardware

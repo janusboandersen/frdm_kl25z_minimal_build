@@ -1,10 +1,15 @@
 # Top-level build system generator for KL25Z
 #
 # Usage:
-# cmake -S . -B build -G Ninja
-# cmake --build build -v
+# Configure:
+#   cmake -S . -B build -G Ninja
 #
-# cmake --build build --target readme
+# Build ELF, BIN and HEX
+#   cmake --build build -v
+#
+# Build documentation
+#   cmake --build build --target readme
+#
 # Janus, October 2025
 
 # Configure phase

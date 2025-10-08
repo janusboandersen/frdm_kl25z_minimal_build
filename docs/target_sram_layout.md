@@ -21,7 +21,7 @@ Figure 2: Target SRAM memory layout after bring-up
    │ Potentially unused space                         │
    └──────────────────────────────────────────────────┘              
    ┌──────────────────────────────────────────────────┐  <-                __StackLimit
-   │ Stack                                            │
+   │ .stack                                           │
    │ - Local variables and function frames            │
    │ - 8-byte aligned for for call convention         │
    │ - Stack grows toward lower addr.                 │
