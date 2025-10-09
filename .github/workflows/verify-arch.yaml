@@ -1,0 +1,18 @@
+name: Verify container architecture
+on: [workflow_dispatch]  # lets you trigger manually in the GitHub UI
+
+permissions:
+  contents: read
+  packages: read   # needed to pull private GHCR images
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Print architecture
+        run: uname -m

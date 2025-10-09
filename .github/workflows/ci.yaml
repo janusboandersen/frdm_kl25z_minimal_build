@@ -1,0 +1,12 @@
+name: hello-ci
+on: [push, pull_request]
+
+jobs:
+  hello:
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the app
+        run: python3 app/hello.py
