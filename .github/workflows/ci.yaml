@@ -6,7 +6,10 @@ jobs:
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Run the app
-        run: python3 app/hello.py
+        run: python3 test/hello.py
