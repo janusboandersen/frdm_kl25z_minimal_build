@@ -1,0 +1,32 @@
+flowchart TD
+
+  firmware["firmware.bin"]
+
+subgraph flash_orchestrator["Flash orchestrator"]
+  pyocd["PyOCD:"]
+  blob["Flash programming algo blob (control path)"]
+end
+
+firmware --> pyocd
+pyocd -- Emit algo to run on CM0+ --> blob
+blob --> sda
+
+subgraph board["FRDM-KL25Z board"]
+
+  sda["On-board SDA (KL20Z): USB-SWD bridge running DAPLink"]
+  subgraph mcu["KL25Z On-chip"]
+    core["Cortex M0+ (executing algo  blob)"]
+    sram["SRAM"]
+    flash["Flash memory module"]
+  end
+end
+
+
+pyocd -- CMSIS-DAP commands (over USB) --> sda
+sda -- Instructions / data injected by PyOCD (over SWD protocol) --> sram
+sda -- reset/halt assert --> core
+sram -- Instructions / data --> core
+core -- Erase / program --> flash
+flash -- Local verify --> core
+core -- Host verify (over SWD)  --> sda
+sda -- Host verify (over USB) --> pyocd

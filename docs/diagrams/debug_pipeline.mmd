@@ -1,0 +1,16 @@
+flowchart LR
+
+  vscgdb["VS Code GDB adapter (optional)"]
+  elf["ELF file for symbols"]
+  gdbc["GDB Client CLI (arm-none-eabi-gdb)"]
+  gdbs["GDB Server"]
+  pyocd["Monitor (PyOCD)"]
+  sda["On-board SDA (KL20Z)"]
+  kl25z["Target (KL25Z)"]
+
+vscgdb <--> gdbc
+elf -- (optional) --> gdbc
+gdbc <--> gdbs
+gdbs <--> pyocd
+pyocd <--> sda
+sda <--> kl25z

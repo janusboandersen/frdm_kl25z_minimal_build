@@ -1,14 +1,27 @@
 # Minimal build for FRDM-KL25Z
 Minimal open-source build for the FRDM-KL25Z, documenting every step from reset vector to `main()`.
 
+Technical highlights:
+- Cross-compilation using GCC for ARM Cortex-M0+
+- Custom linker script for KL25Z memory layout
+- Bare-metal startup code and vector table
+- Automatic post-link firmware verification (ELF analysis)
+- Debug readiness
+- Build reproducibility via CMake + Ninja
+- Comprehensive documentation.
+
 Janus, October 2025.
 
 #### Why does this project exist?
-- To make it easier to understand the steps required to bring up an MCU.
+- To make it easier to understand the steps required to bring up an MCU with a verified binary.
 - This project is an experiment. It aims to distill the build and bring-up to a minimal configuration, using open-source tools.
-- Simple end-to-end documentation is hard to find: Spans IP documentation, IP integrator/vendor documentation, vendor implementation code, library standards, language standards and conventions.
-- MCU vendor builds have layers of abstraction and are generalized to work with a family of MCUs, giving significant code-bloat. The tooling might also rely on closed-source components.
-- For KL25Z, the MCUXpresso SDK v2.2 emits about 35 MB of files to build a hello-world. The older boards come with a closed-source PEMicro bootloader, requiring closed-source tools to flash and debug. You could use Eclipse as a build tool instead of Keil MDK, that buys you open source tooling, but costs you extra configuration bloat and overhead.
+
+
+#### What problems is it trying to solve?
+- _One-stop documentation_: End-to-end documentation is hard to find: Spans IP documentation, IP integrator/vendor documentation, vendor implementation code, library standards, language standards and conventions.
+- _Code minimalism_: MCU vendor builds have layers of abstraction and are generalized to work with a family of MCUs, giving significant code-bloat. For KL25Z, the MCUXpresso SDK v2.2 emits about 35 MB of files to build a hello-world.
+- _Open source tools_: The tooling might also rely on closed-source components. The older boards come with a closed-source PEMicro bootloader, requiring closed-source tools to flash and debug. Keil MDK uses the closed-source ARM compiler.
+- _IDE independence_: You could use Eclipse as a build tool instead of Keil MDK, that buys you open source tooling, but costs you extra configuration bloat and overhead.
 
 
 #### Why use FRDM-KL25Z?
@@ -27,45 +40,92 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
 
 
 #### FAQ
-| Q                                         | A                                                                                                                                                 |
-|-------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| Will the project work on my computer?     | Probably. This experiment was made on an Apple Silicon host running macOS. It could be repeated on any platform with minor modifications.         |
-| Will the project work with my devboard?   | Probably not directly, if the board doesn't have a KL25Z. But when you understand the bring-up steps, you could adapt it to your board and MCU.   |
-| How long will this take?                  | Bring-up is a deep rabbit hole... From ARM architecture, through ABI compliance to C/C++ libraries and semantics.                                 |
+| Q                                             | A                                                                                                                                         |
+|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| Will the project work on my computer?         | Probably. There is a cross-platform devcontainer (docker), and it also works natively on an Apple silicon/macOS host.                     |
+| Will the project work with another devboard?  | Probably not directly, if the board doesn't have a KL25Z. But when you understand the steps, you could adapt it to your board and MCU.    |
+| Is this all?                                  | No. Bring-up is a deep rabbit hole... From ARM architecture, through ABI compliance to C/C++ libraries and semantics. Then debugging...   |
 
 
 ## Project Requirements
 
-The goal of the project is to implement just enough structure to get a solid, scalable yet minimal example of bare-metal CM0+ (ARMv6-M) bring-up with open-source tools. In this context, bring up is defined as _"enough scaffolding to hand control to a C++20 blinky app"_. Solid means without deliberate technical debt, _documented_ and _verified_. Scalable is taken to mean _"readily expandable to support a more complex application"_.
+This project aims to demonstrate end-to-end bare-metal bring-up for Cortex-M0+, emphasizing verification, reproducibility, and documentation.
+
+The goal of the project is to implement enough structure to get a solid, scalable yet minimal example of bare-metal CM0+ (ARMv6-M) bring-up with open-source tools. In this context, bring up is defined as _"enough scaffolding to hand control to a C++20 blinky app"_. Solid means without deliberate technical debt, _documented_ and _verified_. Scalable is taken to mean _"readily expandable to support a more complex application"_.
+
+
 
 | ID    | Requirement Description           | Module                                | Status        | Comments          |
 |------:|:----------------------------------|---------------------------------------|---------------|-------------------|
 | 1.1   | Build system generator for CM0+   | CMakeLists.txt                        | Done          |                   |
-| 1.2   | Cross-compiling toolchain         | cmake/toolchain-arm-none-eabi.cmake   | Done          | GNU 14.3.rel1     |
-| 1.3   | Firmware inspection steps         | cmake/firmware-management.cmake       | On-going      |                   |
-| 2.1   | Linker script for CM0+            | linker/kl25z.ld                       | On-going      | GNU ld            |
-| 3.1   | Startup code for CM0+             | startup/startup_kl25z.S               | On-going      | ARMv6-M Thumb-1   |
+|  1.2  |  Cross-compiling toolchain        | cmake/toolchain-arm-none-eabi.cmake   | Done          | GNU 14.3.rel1     |
+|  1.3  |  Post-compile inspection steps    | cmake/firmware-management.cmake       | On-going      |                   |
+| 2.1   | Linker script for CM0+            | linker/kl25z.ld                       | Done          | GNU ld            |
+| 3.1   | Startup code for CM0+             | startup/startup_kl25z.S               | Done          | ARMv6-M Thumb-1   |
 | 4.1   | System init for CM0+              | system/system_kl25z.cpp               | Not started   | MCG, OSC, SIM     |
-| 5.1   | Hardware Abstraction Layer        | tbd                                   | Not started   |                   |
+| 5.1   | HAL or CMSIS decision + impl.     | tbd                                   | Not started   |                   |
 | 6.1   | User application (minimal blinky) | src/main.cpp                          | Not started   | C++20             |
-| 7.1   | Flashing and debugging            | tbd                                   | Not started   | PyOCD, GDB        |
-| 8.1   | Documentation                     | README.md (this file)                 | -             | Build artifact    |
-| 8.2   | Primary documentation & refs.     | documentation/                        | On-going      |                   |
-| 8.3   | Project docs: Main documentation  | docs/README_template.md               | On-going      | Req. 8.5 builds   |
-| 8.4   | Project docs: Key diagrams        | docs/*.mmd, *.md                      | On-going      | Mermaid, md       |
-| 8.5   | Readme renderer                   | cmake/render_cmake.md                 | Done          | Builds req. 8.3   |
+| 7.1   | Verification                      | -                                     | On-going      |                   |
+|  7.2  |  Manual inspection of ELF         | Check post-compile output             | Done          |                   |
+|  7.3  |  Automatic verification of ELF    | verify/test_firmware.py               | Done          | Pyelftools, Pytest|
+|  7.4  |  Flashing and debugging           | -                                     | On-going      | PyOCD, GDB        |
+| 8.1   | Docs                              | README.md (this file)                 | -             | Compiled          |
+|  8.2  |  Collect primary documentation    | docs/primary_documentation/           | On-going      | Arm, NXP          |
+|  8.3  |  Project docs: Main documentation | docs/README_template.md               | On-going      | Req. 8.5 to build |
+|  8.4  |  Project docs: Diagrams           | docs/diagrams/*.mmd, *.md             | On-going      | Mermaid, md       |
+|  8.5  |  Project docs: Readme renderer    | cmake/render_cmake.md                 | Done          | CMake             |
+| 9.1   | GitHub Actions / CI               | -                                     | On-going      |                   |
 
 **Appendix 1** contains a list of terms.
 
 ### Project development
 
-#### Next Steps
-- Validate memory map symbols with linker output.
+#### Next Milestones
+##### Week 1
 - Add `SystemInit()` and clock configuration.
-- Write small main with blinky, without CMSIS
-- Test on device
-- Verify
+- Implement a minimal main.cpp:
+    - Initialize GPIO clock for PTB18/PTB19 (red/green LEDs).
+    - Configure SysTick (System Timer) for 1 kHz ticks.
+	- Toggle one LED at 2 Hz in the SysTick ISR.
+- Confirm interrupt vector table correctness (ISR executes).
+- Verify Flash Configuration Field contents via check_firmware.py.
+- Add arm-none-eabi-size post-build summary to CMake (print FLASH/SRAM usage).
+
+##### Week 2
+- Add CMake target flash using pyocd flash $<TARGET_FILE:firmware>.
+- Add CMake target verify that runs python3 check_firmware.py build/firmware.elf.
+- Create a .gdbinit script with target remote, load, monitor reset halt, continue.
+- Extend check_firmware.py:
+    - Assert .isr_vector alignment (32-word rule for Cortex-M0+).
+    - Validate vector count matches MKL25Z IRQ table.
+    - Check Flash Config words (FSEC/FOPT) match your intended policy.
+
+##### Week 3
+- GitHub Actions workflow:
+    - [Install arm-none-eabi-gcc](https://github.com/marketplace/actions/arm-none-eabi-gcc-gnu-arm-embedded-toolchain).
+    - Build firmware (Debug + Release).
+    - Run check_firmware.py.
+    - Upload .elf, .hex, .map, and size results as artifacts.
+- Generate a markdown size/memory table appended to README.
+- Add ninja clean target (optional).
+
+##### Week 4
+- Update README:
+	- Add “Technical Highlights” block (toolchain, memory map, verification).
+	- Include system diagram (Mermaid: build pipeline).
+	- Include memory layout diagram (SRAM/FLASH visual).
+	- Show example build output (arm-none-eabi-size table).
+    - Include screenshot/log proving LED or UART demo works.
+- Explicitly document stance on CMSIS (“minimal by design” or “CMSIS-core only”).
+- Tag repo v1.0 and write a short release note summarizing verification outcomes.
+
+##### Other / future
 - QEMU
+- Implement UART0 driver and send build ID over serial.
+- Integrate unit tests for check_firmware.py using pytest.
+- Add memory-use delta check to CI (fail build if footprint grows > 5%).
+- Support secondary target (e.g., STM32L0) to show portability of your build core.
+
 
 #### Other sources to read
 - https://nicopinkowski.wordpress.com/fundamentals/
@@ -91,7 +151,23 @@ This project implements the sources for "bring-up" and "application", and the li
 <!-- END DIAGRAM -->
 
 
-### Build tool prerequisites
+## Tool prerequisites
+
+## Hardware prerequisites
+
+#### DAPLink (CMSIS-DAP debug probe interface)
+- Replace stock PEMicro closed-source bootloader + interface.
+- Download DAPLink firmware file v0253 from [daplink.io](https://daplink.io/).
+- Connect the board in bootloader/maintenance mode (hold reset and plug in OpenSDA port).
+- Best done in Linux: Mount device and copy file onto the FAT16 partition.
+    - On Linux: `cp 0253_k20dx_frdmkl25z_0x8000.bin /path-to-mount/BOOTLOADER/ && sync`.
+- Power cycle board. It should show up as a USB MSD named DAPLink.
+
+## Software prerequisites
+The project has a VS Code devcontainer. That is the easiest way, if you have VS Code and Docker.
+The underlying containers are [here](https://github.com/janusboandersen?tab=packages).
+
+For a native build, get the following:
 
 #### CMake
 - Build-system generator.
@@ -106,20 +182,23 @@ This project implements the sources for "bring-up" and "application", and the li
 - Make sure to have binaries in path. 
     - On macOS/Linux update your rc-file with `export PATH=/Applications/ArmGNUToolchain/14.3.rel1/arm-none-eabi/bin:$PATH`, or similar.
 
-#### DAPLink (CMSIS-DAP debug probe interface)
-- Replace stock PEMicro closed-source bootloader + interface.
-- Download DAPLink firmware file v0253 from [daplink.io](https://daplink.io/).
-- Connect the board in bootloader/maintenance mode (hold reset and plug in OpenSDA port).
-- Best done in Linux: Mount device and copy file onto the FAT16 partition.
-    - On Linux: `cp 0253_k20dx_frdmkl25z_0x8000.bin /path-to-mount/BOOTLOADER/ && sync`.
-- Power cycle board. It should show up as a USB MSD named DAPLink.
+#### Pipx
+- Package manager for Python CLI apps.
+- Install using package manager.
+    - On macOS: `brew install pipx`, `pipx ensurepath`.
 
 #### PyOCD
 - Communicate with CMSIS-DAP to flash and debug MCU. Provides GDB server support.
 - Easiest way to install is your Python package manager. 
-    - On macOS: `brew install pipx`, `pipx ensurepath`, `pipx install pyocd`.
-- Plug in board and check that it enumerates: `pyocd list`.
+    - On macOS: `pipx install pyocd`.
+- Plug in board and check that it enumerates the debug probes: `pyocd list --probes`.
+- Confirm that PyOCD has built-in target support: `pyocd list --targets | grep -i kl25`.
 - FYI, the OpenSDA chip is Kinetis K-series K20DX128VFM5.
+
+#### Pyelftools
+- Inspect and test ELF via Python3.
+- Install in local environment via Python package manager.
+    - On macOS: `python3 -m venv .pyenv`, `source .pyenv/bin/activate`, `python3 -m pip install pyelftools`.
 
 #### Useful VS Code extensions:
 - C/C++ Tool (`ms-vscode.cpptools`).
@@ -297,36 +376,91 @@ To be done.
 To be done.
 
 
-## Flashing and debugging (req. 7.1 + req. 1.3)
-The ELF and the binary are the outputs of the build pipeline, as shown in Figure 1.
-The figure below outlines the build transformations done up to now.
+## Verification (req. 7.1)
+To be done.
 
-Before flashing, it's a good idea to inspect and verify the firmware. 
-The next section shows how.
+### Inspection of the ELF (req. 7.2, using req. 1.3)
+| Activity                  | Command                                                       |
+|---------------------------|---------------------------------------------------------------|
+| View sections             | `arm-none-eabi-readelf -S build/firmware`                     |
+| View headers              | `arm-none-eabi-readelf -l build/firmware`                     |
+| View symbol addresses     | `arm-none-eabi-nm -n build/firmware`                          |
+| View section LMA and VMA  | `arm-none-eabi-objdump -h build/firmware`                     |
 
-Finally, the firmware is flashed to the device. 
-The expected operation of the device is verified.
 
-<!-- BEGIN DIAGRAM -->
+### Automated verification of the ELF (req. 7.3)
+To be done
+
+
+## Source -> ELF/binary -> Hardware recap
+The ELF (with symbols) and the firmware binary (no symbols) are the outputs of the build pipeline, as shown already in Figure 1.
+The figure below recaps the build transformations done up to now.
+The next sections cover flashing the binary to hardware and debugging on hardware.
+
+<!-- BEGIN DIAGRAM Build transformations -->
 @@DIAGRAM5@@
 <!-- END DIAGRAM -->
 
-### Inspection and verification of the ELF (req. 1.3)
-| Activity                  | Command                                                       |
-|---------------------------|---------------------------------------------------------------|
-| View sections             | arm-none-eabi-readelf -S build/firmware                       |
-| View headers              | arm-none-eabi-readelf -l build/firmware                       |
-| View symbol addresses     | arm-none-eabi-nm -n build/firmware                            |
-| View section LMA and VMA  | arm-none-eabi-objdump -h build/firmware                       |
 
-### Flashing with PyOCD
+## Flashing with PyOCD (req. 7.4)
 To be done.
+
+<!-- BEGIN DIAGRAM Flash Pipeline -->
+@@DIAGRAM6@@
+<!-- END DIAGRAM -->
+
 
 ### Debugging with GDB
 To be done.
 
-## Verification
+
+<!-- BEGIN DIAGRAM Debug Pipeline -->
+@@DIAGRAM7@@
+<!-- END DIAGRAM -->
+
+
+##### Connecting to target with PyOCD
+PyOCD is still beta, so the command language is still evolving. The below are valid for v0.39.
+
+| PyOCD command                                                         | Explanation                                                       |
+|-----------------------------------------------------------------------|-------------------------------------------------------------------|
+| `pyocd gdb -t kl25z -O connect_mode=attach -O frequency=1000000`      | Attach to SDA and start GDB server (:port-no)                     |
+
+
+##### Debugging with GDB
+Commands with `monitor` are passed through to PyOCD, so need to be supported by it.
+
+| GDB command                                                           | Explanation                                                       |
+|-----------------------------------------------------------------------|-------------------------------------------------------------------|
+| **Connection**                                                        |                                                                   |
+| `arm-none-eabi-gdb`                                                   | Start GDB client (without symbols from ELF)                       |
+| `target extended-remote :3333`                                        | Connect to GDB server on port :3333, takes control of debug probe |
+| **Execution**                                                         |                                                                   |
+| `monitor halt`                                                        | Halt execution                                                    |
+| `monitor resume`                                                      | Resume execution                                                  |
+| `continue`                                                            | GDB lets target resume execution. Blocks until Ctrl+C             |
+| `monitor reset`                                                       | Reset target                                                      |
+| `monitor reset halt`                                                  | Reset target and stay halted                                      |
+| **Register inspection**                                               |                                                                   |
+| `register info`                                                       | View all registers, refer to e.g. AAPCS32                         |
+| **Breakpoints**                                                       |                                                                   |
+| `info break`                                                          |                                                                   |
+| `delete <n>`                                                          | Delete breakpoint n                                               |
+| **Examine memory**                                                    |                                                                   |
+| `x/NFU <address>`, `FU` in any order, `U` is optional                 | `N`=num units, `F`=format (i,x,d,b,...), `U`=u size (b,h,w,g,...) |
+| `x/32i <address>`                                                     | Inspect code: Examine 32 instructions starting from <address>     |
+| `x/8xw <address>`                                                     | Inspect data: Examine 8 words (32-bit) as raw data                |
+
+
+##### Verification: Checking the Flash configuration field
 To be done.
+
+##### Verification: Checking the magic word
+To be done.
+
+##### Verification: Checking the Reset_Handler instructions
+To be done.
+
 
 ## Documentation and references (req. 8.1-8.2)
 #### Documentation for the hardware
@@ -357,14 +491,16 @@ To be done.
 - **EHABI32**: Exception Handling ABI. [Defines unwind tables].
 - **CPPABI32**: ARM C++ ABI. [Defines vtables, RTTI, constructor/destructor model, and exception interop].
 - Canonical C++ language ABI: [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html). [Defines name mangling, RTTI layout, and C++ runtime hooks, directed at compiler-vendors].
+- **AAELF32**: ELF for the Arm Architecture. [Defines structure of an ELF and semantics of e.g. .ARM.attributes]
 
 ##### Notes on reading order:
 Suggested to read "from hardware and up", after basic overview of ARMv6-M amd CM0+ core:
 1) [mandatory] AAPCS32. Focus on calling conventions and argument passing, use of registers.
 2) [mandatory] BPAPI32. Focus on binary objects, ELF section names, standard symbols for linking runtime.
 3) [optional] Itanium C++ ABI. Focus on what a compiler could/should emit for C++ (constructors, vtables, exceptions).
-4) [relevant for C++] EHABI32. Focus on how ARM implements exceptions and stack unwinding tables using `exidx` and `extab`.
-5) [relavant for C++] CPPABI32. Focus on constructor/destructor model, vtables, name mangling.
+4) [optional] AAELF32. Skim, and locate the Addenda32 references needed. Used for build verification.
+5) [relevant for C++] EHABI32. Focus on how ARM implements exceptions and stack unwinding tables using `exidx` and `extab`.
+6) [relavant for C++] CPPABI32. Focus on constructor/destructor model, vtables, name mangling.
 
 #### Runtime libraries (C++ binary with -specs=nano.specs -lc -lm -lnosys)
 - _GCC libstdc++_
@@ -409,14 +545,15 @@ Suggested to read "from hardware and up", after basic overview of ARMv6-M amd CM
 | ISA                   | Instruction Set Architecture                                      |
 | ISR                   | Interrupt Service Routine                                         |
 | LR                    | Link Register                                                     |
+| LSB                   | Least Significant Bit                                             |
 | MCU                   | Micro-Controller Unit                                             |
 | MSD                   | Mass Storage Device (USB device class)                            |
 | MSP                   | Main Stack Pointer                                                |
 | NVIC                  | Nested Vector Interrupt Controller                                |
-| OCD                   | On-Chip Debugger                                                  |
+| OCD                   | On-Chip Debugger (software)                                       |
 | PC                    | Program Counter                                                   |
 | SP                    | Stack Pointer                                                     |
-| SDA                   | Serial Debug Adapter                                              |
+| SDA                   | Serial Debug Adapter (hardware debug probe / circuitry)           |
 | SDK                   | Software Development Kit                                          |
 | SRAM                  | Static Random-Access Memory (volatile)                            |
 | TU                    | Translation Unit                                                  |
@@ -533,6 +670,12 @@ Default_Handler:
 - **Machine instructions (I)** assemble directly to binary opcodes. For CM0+, generally only 16-bit Thumb-1 instructions are valid (a few 32-bit Thumb-1 instructions like `bl`, no Thumb-2 or ARM mode). The core executes in little-endian mode.
 
 ##### Implications of 16-bit Thumb instructions and little-endian data layout
+- Only "even" addresses in code space are fetchable/addressable (even = bit 0 is "0").
+    - Instructions are aligned on 2-byte (half word) boundaries. So even addresses are the real instruction locations.
+    - LSB on Cortex-M is the Thumb-state flag. "1" marks a callable thumb-mode function (as opposed to "0" marking ARM-mode, which is not supported on Cortex-M).
+    - Example: A Reset_Handler linked at 0x0000_02A5 is actually a thumb function at 0x0000_02A4 (addr & 0xFFFF_FFFE)
+    - Unaligned code access is an error.
+- Odd addresses only make sense for byte access.
 - Instructions generally only directly reference registers R0-R7 (ArchMan p. A4-62), i.e. registers `000` to `111`. They of course will internally access higher registers, e.g. the `PC`, `LR`, `SP` registers, etc.
 - Instructions may not be longer than 16 bits in total.
 - Example: `movs r0, 0x12` (instruction signature `movs Rd, #imm8`) fits in 16 bits -> Opcode is 5 bits (00100), register is 3 bits (000), and 8 bits remain for the immediate 0x12 (00010010).
@@ -559,8 +702,9 @@ Below are the relevant ones for the startup file.
 | `.text`                   | (D) Begin section of executable code                                              |
 | `.globl`                  | (D) Export symbol so it's visible for other compilation units                     |
 | `.weak`                   | (D) Declares symbol as weak, allowing user to override later                      |
-| `.thumb_func`             | (D) Mark following symbol as function entrypoint on thumb architecture            |
-| `.type symbol, %function` | (D) Mark `symbol` as a function in the ELF symbol table                           |
+| `.thumb_func`             | (D) Mark following symbol as function entrypoint on thumb architecture (low bit 1)|
+| `.type symbol, %function` | (D) Mark `symbol` as a function in the ELF symbol table (callable, STT_FUNC)      |
+| `.type symbol, %object`   | (D) Mark `symbol` as data object in the ELF symbol table (variable, array, STT_OBJECT)|
 | `.size symbol, expr`      | (D) Record the size of `symbol` as `expr` in the ELF symbol table                 |
 | `.word` / `.long`         | (P) Emit a 32-bit constant                                                        |
 | `.set alias, target`      | (P) Define `alias` as alias for `target`, e.g. `IRQHandler` alias for `Default`   |
@@ -572,7 +716,6 @@ Below are the relevant ones for the startup file.
 | `[Rn]`                    | Register indirect address: Use `Rn` as memory address, yields value @ address Rn  |
 | `[Rn, #imm]`              | Register indirect with constant offset: Use `Rn + imm` as memory address          |
 | `[Rn, Rm]`                | Register indirect with register offset: Use `Rn + Rm` as memory address           |
-| `bics Rd`
 | `adds Rd, Rn, <Rm\|#imm`> | (I) Addition (upd NZCV flags): Rd <- (Rn + imm) or Rd <- (Rn + Rm)                |
 | `ldr Rt, =symbol`         | (P) Load register: Rt <- immediate_symbol_or_literal_pool                         |
 | `ldr Rt,[Rn]`             | (P) Load register: Rt <- [Rn]                                                     |

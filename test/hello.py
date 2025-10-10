@@ -1,1 +1,0 @@
-print("hello from the same container in podman, devcontainer, and github actions")
