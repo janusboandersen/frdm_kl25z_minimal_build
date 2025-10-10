@@ -9,7 +9,10 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user 0
     steps:
       - uses: actions/checkout@v4
+      - name: List files (debug once)
+        run: ls -R
       - name: Run the app
         run: python3 test/hello.py
