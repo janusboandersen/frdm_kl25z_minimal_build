@@ -1,94 +1,123 @@
-# Minimal build for FRDM-KL25Z
-Minimal open-source build for the FRDM-KL25Z, documenting every step from reset vector to `main()`.
+# Minimal Build for FRDM-KL25Z
+A reproducible, minimal, open-source bring-up pipeline for the FRDM-KL25Z, documenting every step from the linker script to `main()`.
 
-Technical highlights:
-- Cross-compilation using GCC for ARM Cortex-M0+
-- Custom linker script for KL25Z memory layout
-- Bare-metal startup code and vector table
-- Automatic post-link firmware verification (ELF analysis)
-- Debug readiness
-- Build reproducibility via CMake + Ninja
-- Comprehensive documentation.
+This project implements a fully reproducible bare-metal bring-up for Cortex-M0+ (ARMv6-M). Technical highlights:
+- Cross-compiled with GCC for the ARM Cortex-M0+ core.
+- Custom linker script defining the KL25Z memory layout.
+- Bare-metal startup code and vector table.
+- Automatic post-link firmware verification through ELF analysis.
+- Debug-ready via pyOCD and GDB.
+- Fully reproducible builds throguh CMake and containerization.
+- Comprehensive documentation of each component.
 
-Janus, October 2025.
 
+## Direct Links
+- [Project Purpose](#project-purpose)
+- [Requirements](#requirements)
+- [Development Milestones](#development-milestones)
+- [Build Pipeline](#build-pipeline)
+- [Hardware Preparation](#hardware-preparation)
+- [Software Preparation](#software-preparation)
+- [Linker Script Implementation](#linker-script-implementation)
+- [Startup Code Implementation](#startup-code-implementation)
+- [System Initialization Implementation](#system-initialization-implementation)
+- [Minimal HAL Implementation](#minimal-hal-implementation)
+- [User Application Implementation](#user-application-implementation)
+- [Verification Implementation](#verification-implementation)
+- [Flashing and Debugging](#flashing-and-debugging)
+- [Documentation and References](#documentation-and-references)
+- [Appendix 1: Terminology](#appendix-1-terminology)
+- [Appendix 2: Linking](#appendix-2-linking---just-enough-syntax-to-write-gnu-linker-script)
+- [Appendix 3: Startup and Assembler](#appendix-3-startup-and-assembler---just-enough-syntax-to-write-a-cm0-startup-file)
+- [Appendix 4: ABI Specs](#appendix-4-abi-specs)
+
+
+## Project Purpose
 #### Why does this project exist?
-- To make it easier to understand the steps required to bring up an MCU with a verified binary.
-- This project is an experiment. It aims to distill the build and bring-up to a minimal configuration, using open-source tools.
+- To make it easier to understand, reproduce, and verify each step required to bring up a microcontroller.
+- This is an experiment aiming to distill the build and bring-up to a minimal configuration, using open-source tools.
 
+#### Why use FRDM-KL25Z for the project?
+The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal for experimentation, and it's low cost.
 
-#### What problems is it trying to solve?
-- _One-stop documentation_: End-to-end documentation is hard to find: Spans IP documentation, IP integrator/vendor documentation, vendor implementation code, library standards, language standards and conventions.
+| Spec              | Details                                                                                       |
+|-------------------|-----------------------------------------------------------------------------------------------|
+| **MCU**           | KL25Z with ARM Cortex-M0+ core (ARMv6-M architecture)                                         |
+| **Core**          | Simple 32-bit core, uses Thumb-1 16-bit instructions (common in low-end and legacy devices)   |
+| **Memory**        | 128 KB flash, 16 KB SRAM on-chip                                                              |
+| **Peripherals**   | Basic on-chip peripherals (GPIO, UART, SPI, I2C, ADC, etc.)                                   |
+| **Flash & Debug** | On-board OpenSDA makes it easy to flash and debug without additional hardware                 |
+| **Extras**        | RGB LED, accelerometer, capacitive touch input                                                |
+| **Part no.**      | NXP (originally Freescale) part no. MKL25Z128VLK4                                             |
+| **EOL?**          | No, still in production as of October 2025                                                    |
+
+#### What problems is the project trying to solve?
+- _One-stop documentation_: End-to-end documentation is hard to find. Spanning IP documentation, IP integrator/vendor documentation, vendor implementation code, library standards, language standards and conventions.
 - _Code minimalism_: MCU vendor builds have layers of abstraction and are generalized to work with a family of MCUs, giving significant code-bloat. For KL25Z, the MCUXpresso SDK v2.2 emits about 35 MB of files to build a hello-world.
 - _Open source tools_: The tooling might also rely on closed-source components. The older boards come with a closed-source PEMicro bootloader, requiring closed-source tools to flash and debug. Keil MDK uses the closed-source ARM compiler.
 - _IDE independence_: You could use Eclipse as a build tool instead of Keil MDK, that buys you open source tooling, but costs you extra configuration bloat and overhead.
 
-
-#### Why use FRDM-KL25Z?
-The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal for experimentation, and it's low cost.
-
-| Spec          | Details                                                                                       |
-|---------------|-----------------------------------------------------------------------------------------------|
-| MCU           | KL25Z MCU with Arm Cortex-M0+ core (ARMv6-M architecture).                                    |
-| Core          | Simple 32-bit core, common in low-end and legacy devices, uses Thumb-1 16-bit instructions.   |
-| Memory        | 128 KB flash and 16 KB SRAM on-chip.                                                          |
-| Peripherals   | All the usual basic peripherals on-chip.                                                      |
-| Flash & Debug | On-board OpenSDA makes it easy to flash and debug without additional hardware.                |
-| Extras        | Extra peripherals on the board as well; RGB led, accelerometer, capacitive touch, etc.        |
-| Part no.      | NXP (originally Freescale) part no. MKL25Z128VLK4.                                            |
-| EOL?          | No, not as of October 2025.                                                                   |
-
-
 #### FAQ
 | Q                                             | A                                                                                                                                         |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| Will the project work on my computer?         | Probably. There is a cross-platform devcontainer (docker), and it also works natively on an Apple silicon/macOS host.                     |
-| Will the project work with another devboard?  | Probably not directly, if the board doesn't have a KL25Z. But when you understand the steps, you could adapt it to your board and MCU.    |
-| Is this all?                                  | No. Bring-up is a deep rabbit hole... From ARM architecture, through ABI compliance to C/C++ libraries and semantics. Then debugging...   |
+| Will the project work on my computer?         | It should work. It builds cross-platform in a devcontainer (Docker), and also natively on macOS (Apple silicon).                          |
+| Will the project work with another devboard?  | Not directly, but once you understand the steps, the project can be adapted to another board and MCU.                                     |
+| Is this all?                                  | No, this is the starting point. Real bring-up is a deep rabbit hole covering ARM architecture, ABI compliance, C/C++ runtime semantics, and debugging infrastructure. |
 
 
-## Project Requirements
+## Requirements
 
-This project aims to demonstrate end-to-end bare-metal bring-up for Cortex-M0+, emphasizing verification, reproducibility, and documentation.
+#### Non-functional (quality) requirements
+- Reproducible: Builds entirely with open-source toolchains and CMake, portable across systems, and fully documented.
+- Verifiable: Post-build scripts inspect and verify ELF artifacts.
+- Scalable: Structured to support larger applications without rewriting startup, linker, or build infrastructure.
+- Modern: Leverages modern CMake practices and the latest C++ standards supported by the Arm GNU toolchain.
+- Validated: Boots, initializes the runtime environment, and hands off control to an interrupt-driven blinky application.
 
-The goal of the project is to implement enough structure to get a solid, scalable yet minimal example of bare-metal CM0+ (ARMv6-M) bring-up with open-source tools. In this context, bring up is defined as _"enough scaffolding to hand control to a C++20 blinky app"_. Solid means without deliberate technical debt, _documented_ and _verified_. Scalable is taken to mean _"readily expandable to support a more complex application"_.
+#### Functional requirements
+
+| ID    | Requirement                                   | Module / Artifact                     | Progress      | Comments                              |
+|------:|:----------------------------------------------|---------------------------------------|---------------|---------------------------------------|
+| 1.1   | Implement build generator for Cortex-M0+      | CMakeLists.txt                        | Completed     | Ninja                                 |
+| 1.2   | Provide cross-compiler toolchain              | cmake/toolchain-arm-none-eabi.cmake   | Completed     | Arm GNU Toolchain 14.2.rel1           |
+| 1.3   | Integrate post-compile verification targets   | cmake/firmware_management.cmake       | In progress   | Targets for Req. 7.1-7.3              |
+| 1.4   | Integrate pyOCD flashing and GDB debug targets|                                       | Planned       | PyOCD, GDB                            |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 2.1   | Implement linker script for Cortex-M0+        | linker/kl25z.ld                       | Completed     | GNU ld                                |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 3.1   | Implement startup code for Cortex-M0+         | startup/startup_kl25z.S               | Completed     | ARMv6-M Thumb-1                       |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 4.1   | Implement system init for Cortex-M0+          | system/system_kl25z.cpp               | Planned       | MCG, OSC, SIM                         |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 5.1   | Evaluate CMSIS header inclusion or minimal HAL| TBD                                   | Planned       |                                       |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 6.1   | Implement minimal user application            | src/main.cpp                          | Planned       | C++20 / C++23                         |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 7.1   | Provide firmware verification process         | -                                     | In progress   | See Req. 1.3 for build integration    |
+| 7.2   | Implement manual inspection steps for ELF     | Check post-compile output             | Completed     |                                       |
+| 7.3   | Implement automatic verification of ELF       | verify/test_firmware.py               | Completed     | Pytest, pyelftools                    |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 8.1   | Provide project README and documentation      | README.md (this file)                 | Completed     | Compiled                              |
+| 8.2   | Collect primary source documentation          | docs/primary_documentation/           | In progress   | Arm, NXP                              |
+| 8.3   | Provide project documentation                 | docs/README_template.md               | In progress   | Req. 8.5 to build                     |
+| 8.4   | Provide key diagrams                          | docs/diagrams/*.mmd, *.md             | In progress   | Mermaid, md                           |
+| 8.5   | Provide README renderer script                | cmake/render_readme.cmake, readme_docs.cmake | Completed     | CMake                                 |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 9.1   | Containerize project for portability          | .docker, .devcontainer                | In progress   | Multi-arch (amd64, arm64)             |
+|       | <!-- spacer -->                               |                                       |               |                                       |
+| 10.1  | Implement Continuous Integration              | .github/workflows                     | In progress   | GitHub Actions build/verify workflow  |
 
 
 
-| ID    | Requirement Description           | Module                                | Status        | Comments          |
-|------:|:----------------------------------|---------------------------------------|---------------|-------------------|
-| 1.1   | Build system generator for CM0+   | CMakeLists.txt                        | Done          |                   |
-|  1.2  |  Cross-compiling toolchain        | cmake/toolchain-arm-none-eabi.cmake   | Done          | GNU 14.3.rel1     |
-|  1.3  |  Post-compile inspection steps    | cmake/firmware-management.cmake       | On-going      |                   |
-| 2.1   | Linker script for CM0+            | linker/kl25z.ld                       | Done          | GNU ld            |
-| 3.1   | Startup code for CM0+             | startup/startup_kl25z.S               | Done          | ARMv6-M Thumb-1   |
-| 4.1   | System init for CM0+              | system/system_kl25z.cpp               | Not started   | MCG, OSC, SIM     |
-| 5.1   | HAL or CMSIS decision + impl.     | tbd                                   | Not started   |                   |
-| 6.1   | User application (minimal blinky) | src/main.cpp                          | Not started   | C++20             |
-| 7.1   | Verification                      | -                                     | On-going      |                   |
-|  7.2  |  Manual inspection of ELF         | Check post-compile output             | Done          |                   |
-|  7.3  |  Automatic verification of ELF    | verify/test_firmware.py               | Done          | Pyelftools, Pytest|
-|  7.4  |  Flashing and debugging           | -                                     | On-going      | PyOCD, GDB        |
-| 8.1   | Docs                              | README.md (this file)                 | -             | Compiled          |
-|  8.2  |  Collect primary documentation    | docs/primary_documentation/           | On-going      | Arm, NXP          |
-|  8.3  |  Project docs: Main documentation | docs/README_template.md               | On-going      | Req. 8.5 to build |
-|  8.4  |  Project docs: Diagrams           | docs/diagrams/*.mmd, *.md             | On-going      | Mermaid, md       |
-|  8.5  |  Project docs: Readme renderer    | cmake/render_cmake.md                 | Done          | CMake             |
-| 9.1   | GitHub Actions / CI               | -                                     | On-going      |                   |
 
-**Appendix 1** contains a list of terms.
+## Development Milestones
 
-### Project development
-
-#### Next Milestones
 ##### Week 1
 - Add `SystemInit()` and clock configuration.
 - Implement a minimal main.cpp:
     - Initialize GPIO clock for PTB18/PTB19 (red/green LEDs).
     - Configure SysTick (System Timer) for 1 kHz ticks.
 	- Toggle one LED at 2 Hz in the SysTick ISR.
-- Confirm interrupt vector table correctness (ISR executes).
-- Verify Flash Configuration Field contents via check_firmware.py.
 - Add arm-none-eabi-size post-build summary to CMake (print FLASH/SRAM usage).
 
 ##### Week 2
@@ -96,8 +125,6 @@ The goal of the project is to implement enough structure to get a solid, scalabl
 - Add CMake target verify that runs python3 check_firmware.py build/firmware.elf.
 - Create a .gdbinit script with target remote, load, monitor reset halt, continue.
 - Extend check_firmware.py:
-    - Assert .isr_vector alignment (32-word rule for Cortex-M0+).
-    - Validate vector count matches MKL25Z IRQ table.
     - Check Flash Config words (FSEC/FOPT) match your intended policy.
 
 ##### Week 3
@@ -112,8 +139,6 @@ The goal of the project is to implement enough structure to get a solid, scalabl
 ##### Week 4
 - Update README:
 	- Add “Technical Highlights” block (toolchain, memory map, verification).
-	- Include system diagram (Mermaid: build pipeline).
-	- Include memory layout diagram (SRAM/FLASH visual).
 	- Show example build output (arm-none-eabi-size table).
     - Include screenshot/log proving LED or UART demo works.
 - Explicitly document stance on CMSIS (“minimal by design” or “CMSIS-core only”).
@@ -134,7 +159,7 @@ The goal of the project is to implement enough structure to get a solid, scalabl
 - https://embeddedartistry.com/blog/2019/04/17/exploring-startup-implementations-newlib-arm/
 
 
-## Build pipeline (req. 1.1 - 1.3)
+## Build Pipeline
 
 The build pipeline is based on the ARM GNU Toolchain. 
 Minimal components and build flow are detailed in the diagram.
@@ -151,9 +176,7 @@ This project implements the sources for "bring-up" and "application", and the li
 <!-- END DIAGRAM -->
 
 
-## Tool prerequisites
-
-## Hardware prerequisites
+## Hardware Preparation
 
 #### DAPLink (CMSIS-DAP debug probe interface)
 - Replace stock PEMicro closed-source bootloader + interface.
@@ -163,7 +186,8 @@ This project implements the sources for "bring-up" and "application", and the li
     - On Linux: `cp 0253_k20dx_frdmkl25z_0x8000.bin /path-to-mount/BOOTLOADER/ && sync`.
 - Power cycle board. It should show up as a USB MSD named DAPLink.
 
-## Software prerequisites
+
+## Software Preparation
 The project has a VS Code devcontainer. That is the easiest way, if you have VS Code and Docker.
 The underlying containers are [here](https://github.com/janusboandersen?tab=packages).
 
@@ -207,7 +231,7 @@ For a native build, get the following:
 - LinkerScript (`zixuanwang.linkerscript`)
 
 
-## Linker script (req. 2.1)
+## Linker Script Implementation
 
 The implemented linker script is `linker/kl25z.ld`.
 
@@ -312,7 +336,7 @@ The table below is not exhaustive. Other libraries will likely require other sym
 See **Appendix 4** for an overview of the standards that build up the ABI requirements.
 
 
-## Startup code (req. 3.1)
+## Startup Code Implementation
 
 **Appendix 3** contains a mini reference for the required assembler syntax.
 
@@ -364,19 +388,28 @@ The `Reset_Handler` (word 1 of the vector table -> vector at `0x04`) is invoked 
 - Hands off to `main()`.
 
 
-## System initialization (req. 4.1)
+## System Initialization Implementation
 To be done.
 
 
-## Minimal HAL (req. 5.1)
+## Minimal HAL Implementation
 To be done.
 
 
-## User application (req. 6.1)
+## User Application Implementation
 To be done.
 
 
-## Verification (req. 7.1)
+## Verification Implementation
+To be done.
+
+##### Verification: Checking the Flash configuration field
+To be done.
+
+##### Verification: Checking the magic word
+To be done.
+
+##### Verification: Checking the Reset_Handler instructions
 To be done.
 
 ### Inspection of the ELF (req. 7.2, using req. 1.3)
@@ -387,12 +420,16 @@ To be done.
 | View symbol addresses     | `arm-none-eabi-nm -n build/firmware`                          |
 | View section LMA and VMA  | `arm-none-eabi-objdump -h build/firmware`                     |
 
+nm -C demangled
+disassemble
 
 ### Automated verification of the ELF (req. 7.3)
 To be done
 
 
-## Source -> ELF/binary -> Hardware recap
+## Flashing and Debugging
+
+### Source -> ELF/binary -> Hardware recap
 The ELF (with symbols) and the firmware binary (no symbols) are the outputs of the build pipeline, as shown already in Figure 1.
 The figure below recaps the build transformations done up to now.
 The next sections cover flashing the binary to hardware and debugging on hardware.
@@ -402,7 +439,7 @@ The next sections cover flashing the binary to hardware and debugging on hardwar
 <!-- END DIAGRAM -->
 
 
-## Flashing with PyOCD (req. 7.4)
+### Flashing with PyOCD
 To be done.
 
 <!-- BEGIN DIAGRAM Flash Pipeline -->
@@ -452,17 +489,10 @@ Commands with `monitor` are passed through to PyOCD, so need to be supported by 
 | `x/8xw <address>`                                                     | Inspect data: Examine 8 words (32-bit) as raw data                |
 
 
-##### Verification: Checking the Flash configuration field
-To be done.
-
-##### Verification: Checking the magic word
-To be done.
-
-##### Verification: Checking the Reset_Handler instructions
-To be done.
 
 
-## Documentation and references (req. 8.1-8.2)
+
+## Documentation and References
 #### Documentation for the hardware
 - NXP: Covers the integrated peripherals (memory, timers, etc.), chip electrical characteristics, dev board.
     - Kinetis KL25 Sub-Family Reference Manual (KL25P80M48SF0RM.pdf), Rev. 3 (2012) aka. **RM** or **RefMan**.
@@ -535,6 +565,7 @@ Suggested to read "from hardware and up", after basic overview of ARMv6-M amd CM
 |-----------------------|-------------------------------------------------------------------|
 | ABI                   | Application Binary Interface                                      |
 | bss                   | Block Starting Symbol (statically allocated, no value assigned)   |
+| CI                    | Continuous Integration                                            |
 | CM0+                  | Cortex-M0+                                                        |
 | CMSIS                 | Common Microcontroller Software Interface Standard                |
 | DAP                   | Debug Access Port, in DAPLink and CMSIS-DAP                       |
@@ -561,7 +592,7 @@ Suggested to read "from hardware and up", after basic overview of ARMv6-M amd CM
 | XIP                   | Execution in Place                                                |
 
 
-# Appendix 2: Linking - just enough syntax to write GNU linker script
+# Appendix 2: Linking - GNU Linker Script Reference Summary
 
 GNU Linker script is [documented as part of binutils](https://sourceware.org/binutils/docs/).
 A simplified outline of the linker script structure:
@@ -611,7 +642,7 @@ The linker script only describes layout and symbol addresses.
 Actual copying or zeroing of memory (for .data, .bss) is done by startup code, not the linker.
 
 
-# Appendix 3: Startup and assembler - just enough syntax to write a CM0+ startup file
+# Appendix 3: Startup and Assembler - GAS Assembler Reference Summary
 
 The startup file defines processor entry points and minimal bring-up code for the KL25Z.
 It is pure assembly and executes before any C runtime initialization.
