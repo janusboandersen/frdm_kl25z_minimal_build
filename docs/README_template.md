@@ -1,13 +1,13 @@
 # Minimal Build for FRDM-KL25Z
-A reproducible, minimal, open-source bring-up pipeline for the FRDM-KL25Z, documenting every step from the linker script to `main()`.
+A reproducible, minimal, open-source bring-up pipeline for the FRDM-KL25Z.
 
-This project implements a fully reproducible bare-metal bring-up for Cortex-M0+ (ARMv6-M). Technical highlights:
+This project implements a fully reproducible bare-metal bring-up targeting the Cortex-M0+ core (ARMv6-M). Technical highlights:
 - Cross-compiled with GCC for the ARM Cortex-M0+ core.
 - Custom linker script defining the KL25Z memory layout.
 - Bare-metal startup code and vector table.
 - Automatic post-link firmware verification through ELF analysis.
 - Debug-ready via pyOCD and GDB.
-- Fully reproducible builds throguh CMake and containerization.
+- Fully reproducible builds through CMake and containerization.
 - Comprehensive documentation of each component.
 
 
@@ -16,26 +16,24 @@ This project implements a fully reproducible bare-metal bring-up for Cortex-M0+ 
 - [Requirements](#requirements)
 - [Development Milestones](#development-milestones)
 - [Build Pipeline](#build-pipeline)
-- [Hardware Preparation](#hardware-preparation)
-- [Software Preparation](#software-preparation)
-- [Linker Script Implementation](#linker-script-implementation)
-- [Startup Code Implementation](#startup-code-implementation)
-- [System Initialization Implementation](#system-initialization-implementation)
-- [Minimal HAL Implementation](#minimal-hal-implementation)
-- [User Application Implementation](#user-application-implementation)
-- [Verification Implementation](#verification-implementation)
-- [Flashing and Debugging](#flashing-and-debugging)
+- [Hardware and Software Setup](#hardware-preparation)
+- [Implementation Details](#linker-script-implementation)
+- [Verification and Debugging](#verification-implementation)
 - [Documentation and References](#documentation-and-references)
-- [Appendix 1: Terminology](#appendix-1-terminology)
-- [Appendix 2: Linking](#appendix-2-linking---just-enough-syntax-to-write-gnu-linker-script)
-- [Appendix 3: Startup and Assembler](#appendix-3-startup-and-assembler---just-enough-syntax-to-write-a-cm0-startup-file)
-- [Appendix 4: ABI Specs](#appendix-4-abi-specs)
+- [Appendices](#appendix-1-terminology)
 
 
 ## Project Purpose
 #### Why does this project exist?
+- To serve as a reference firmware build for embedded engineers.
 - To make it easier to understand, reproduce, and verify each step required to bring up a microcontroller.
-- This is an experiment aiming to distill the build and bring-up to a minimal configuration, using open-source tools.
+- To distill the build and bring-up to a minimal configuration, using open-source tools.
+
+#### What does this project aim to advance in the embedded space?
+- _Unified documentation_: End-to-end bring-up knowledge is fragmented across vendor manuals, CMSIS headers, and toolchain docs. This project consolidates the essential steps in one place.
+- _Code minimalism_: Typical vendor SDKs introduce excessive abstraction and code bloat. For the KL25Z, the MCUXpresso SDK v2.2 produces ~35 MB of files for a “hello world.” This project achieves the same bring-up in kilobytes.
+- _Open source toolchains_: Many MCU workflows rely on proprietary compilers, debuggers, or bootloaders (e.g., Keil MDK, PEMicro). This project uses a completely open stack: GCC, pyOCD, GDB, and CMake.
+- _IDE independence_: Replaces IDE-centric workflows with reproducible command-line builds and minimal configuration overhead — suitable for CI and containerized development.
 
 #### Why use FRDM-KL25Z for the project?
 The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal for experimentation, and it's low cost.
@@ -50,12 +48,6 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
 | **Extras**        | RGB LED, accelerometer, capacitive touch input                                                |
 | **Part no.**      | NXP (originally Freescale) part no. MKL25Z128VLK4                                             |
 | **EOL?**          | No, still in production as of October 2025                                                    |
-
-#### What problems is the project trying to solve?
-- _One-stop documentation_: End-to-end documentation is hard to find. Spanning IP documentation, IP integrator/vendor documentation, vendor implementation code, library standards, language standards and conventions.
-- _Code minimalism_: MCU vendor builds have layers of abstraction and are generalized to work with a family of MCUs, giving significant code-bloat. For KL25Z, the MCUXpresso SDK v2.2 emits about 35 MB of files to build a hello-world.
-- _Open source tools_: The tooling might also rely on closed-source components. The older boards come with a closed-source PEMicro bootloader, requiring closed-source tools to flash and debug. Keil MDK uses the closed-source ARM compiler.
-- _IDE independence_: You could use Eclipse as a build tool instead of Keil MDK, that buys you open source tooling, but costs you extra configuration bloat and overhead.
 
 #### FAQ
 | Q                                             | A                                                                                                                                         |
@@ -577,7 +569,7 @@ Suggested to read "from hardware and up", after basic overview of ARMv6-M amd CM
 | ISR                   | Interrupt Service Routine                                         |
 | LR                    | Link Register                                                     |
 | LSB                   | Least Significant Bit                                             |
-| MCU                   | Micro-Controller Unit                                             |
+| MCU                   | Microcontroller Unit                                             |
 | MSD                   | Mass Storage Device (USB device class)                            |
 | MSP                   | Main Stack Pointer                                                |
 | NVIC                  | Nested Vector Interrupt Controller                                |

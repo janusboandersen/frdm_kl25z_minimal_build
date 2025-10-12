@@ -23,7 +23,7 @@ Figure 2: Target SRAM memory layout after bring-up
    ┌──────────────────────────────────────────────────┐  <-                __StackLimit
    │ .stack                                           │
    │ - Local variables and function frames            │
-   │ - 8-byte aligned for for call convention         │
+   │ - 8-byte aligned for call convention             │
    │ - Stack grows toward lower addr.                 │
    └──────────────────────────────────────────────────┘ 0x2000_2FFF        __StackBase
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
