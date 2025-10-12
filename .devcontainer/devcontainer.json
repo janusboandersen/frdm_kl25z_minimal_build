@@ -1,0 +1,12 @@
+{
+  "name": "hello-container",
+  "image": "ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1",
+  "remoteUser": "ubuntu",
+  "workspaceFolder": "/work",
+  "runArgs": [
+  ],
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/work,type=bind"
+  ],
+  "overrideCommand": true
+}
