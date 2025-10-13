@@ -15,7 +15,18 @@
         "ms-python.python",
         "ms-vscode.cmake-tools",
         "zixuanwang.linkerscript"
-      ]
+      ],
+      "settings": {
+       "python.defaultInterpreterPath": "/opt/venv/bin/python3",
+       "cmake.generator": "Ninja",
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+         "zsh": { 
+           "path": "/usr/bin/zsh", 
+           "args": ["-l"] 
+         }
+        }
+      }
     }
   },
 
