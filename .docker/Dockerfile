@@ -122,15 +122,28 @@ RUN pip cache purge && \
 # --- Stage 3: Final image ---
 FROM ubuntu:24.04 as final
 ARG DEBIAN_FRONTEND=noninteractive
+ARG USERNAME=vscode
 
-# Pinned versions as of October 2025
+# Pinned versions as of October 2025 for reproducibility
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        python3=3.12.3-0ubuntu2 \
+            python3.12=3.12.3-1ubuntu0.8 \
+            python3.12-minimal=3.12.3-1ubuntu0.8 \
         cmake=3.28.3-1build7 \
         ninja-build=1.11.1-2 && \
     apt-mark hold \
         cmake \
-        ninja-build && \
+        ninja-build
+
+# Developer convenience tools, good for devcontainer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        adduser \
+        zsh \
+        curl \
+        ca-certificates \
+        git && \
     rm -rf /var/lib/apt/lists/*
 
 # Cross-compiler toolchain
@@ -141,10 +154,6 @@ COPY --from=py-build /opt/venv /opt/venv
 COPY --from=py-build /opt/pipx/venvs/pyocd /opt/pipx/venvs/pyocd
 COPY --from=py-build /opt/pipx/shared /opt/pipx/shared
 COPY --from=py-build /usr/local/bin/pyocd /usr/local/bin/pyocd
-
-
-# Ensure overriding system compilers and pythons
-ENV PATH="/opt/venv/bin:/usr/local/bin:/opt/toolchains/arm-none-eabi/bin:${PATH}"
 
 # Minify image
 RUN apt-get clean && \
@@ -158,12 +167,31 @@ RUN apt-get clean && \
         /usr/share/linda/* \
         /usr/share/locale/* && mkdir -p /usr/share/locale/en && true
 
+# Enable UTF-8 instead of ascii for OhMyZsh
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
-# Devcontainer runs as ubuntu, not root
-RUN mkdir -p /work && chown -R ubuntu:ubuntu /work
-USER ubuntu
+# Ensure overriding system compilers and pythons
+ENV TOOLCHAIN_PATH="/opt/venv/bin:/usr/local/bin:/opt/toolchains/arm-none-eabi/bin"
+ENV PATH="${TOOLCHAIN_PATH}:${PATH}"
+
+# Prepare user environment
+RUN adduser --disabled-password --gecos "" --shell /usr/bin/zsh "$USERNAME"
+
+RUN su - "$USERNAME" -c 'RUNZSH=no CHSH=no KEEP_ZSHRC=yes; \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"'
+
+# Fix the theme
+RUN sed -i 's/ZSH_THEME=.*/ZSH_THEME="agnoster"/' /home/"${USERNAME}"/.zshrc && \
+    sed -i 's/^plugins=(.*/plugins=(git)/' /home/"${USERNAME}"/.zshrc && \
+    chown "${USERNAME}:${USERNAME}" /home/"${USERNAME}"/.zshrc
+
+RUN mkdir -p /work && \
+    chown -R "${USERNAME}:${USERNAME}" /work
+
+USER ${USERNAME}
 WORKDIR /work
-CMD ["python3", "verify/hello.py"]
+CMD ["sleep", "infinity"]
 
 # Github Actions must run as root
-USER root
+#USER root

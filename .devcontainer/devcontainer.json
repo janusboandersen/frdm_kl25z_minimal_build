@@ -1,12 +1,28 @@
 {
-  "name": "hello-container",
-  "image": "ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1",
-  "remoteUser": "ubuntu",
+  "name": "FRDM-KL25Z minimal build",
+  "image": "ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1-arm64",
+
+  // Session
+  "remoteUser": "vscode",
+  "userEnvProbe": "loginInteractiveShell",   
+  "overrideCommand": true,
+
+  // IDE customization
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-python.python",
+        "ms-vscode.cmake-tools",
+        "zixuanwang.linkerscript"
+      ]
+    }
+  },
+
+  // Workspace and runtime
   "workspaceFolder": "/work",
-  "runArgs": [
-  ],
   "mounts": [
     "source=${localWorkspaceFolder},target=/work,type=bind"
   ],
-  "overrideCommand": true
+  "runArgs": []
 }
