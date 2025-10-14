@@ -1,6 +1,8 @@
 # --------------------------
 # Documentation renderer
 # --------------------------
+
+
 set(DIAGRAM1         ${CMAKE_SOURCE_DIR}/docs/diagrams/build_pipeline.mmd)
 set(DIAGRAM2         ${CMAKE_SOURCE_DIR}/docs/diagrams/target_sram_layout.md)
 set(DIAGRAM3         ${CMAKE_SOURCE_DIR}/docs/diagrams/target_flash_layout.md)

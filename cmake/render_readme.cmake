@@ -1,3 +1,6 @@
+# Force new style variable expansion
+cmake_policy(SET CMP0053 NEW)
+
 # Render the readme file with Mermaid included
 # Turns out we need slightly different blocks depending on the type of either .mmd or .md, so this file is very manual
 

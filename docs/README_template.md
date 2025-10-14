@@ -1,4 +1,7 @@
 # Minimal Build for FRDM-KL25Z
+
+![Firmware build and verification](https://github.com/janusboandersen/frdm_kl25z_minimal_build/actions/workflows/ci.yaml/badge.svg)
+
 A reproducible, minimal, open-source bring-up pipeline for the FRDM-KL25Z.
 
 This project implements a fully reproducible bare-metal bring-up targeting the Cortex-M0+ core (ARMv6-M). Technical highlights:
@@ -33,7 +36,7 @@ This project implements a fully reproducible bare-metal bring-up targeting the C
 - _Unified documentation_: End-to-end bring-up knowledge is fragmented across vendor manuals, CMSIS headers, and toolchain docs. This project consolidates the essential steps in one place.
 - _Code minimalism_: Typical vendor SDKs introduce excessive abstraction and code bloat. For the KL25Z, the MCUXpresso SDK v2.2 produces ~35 MB of files for a “hello world.” This project achieves the same bring-up in kilobytes.
 - _Open source toolchains_: Many MCU workflows rely on proprietary compilers, debuggers, or bootloaders (e.g., Keil MDK, PEMicro). This project uses a completely open stack: GCC, pyOCD, GDB, and CMake.
-- _IDE independence_: Replaces IDE-centric workflows with reproducible command-line builds and minimal configuration overhead — suitable for CI and containerized development.
+- _IDE independence_: Replaces IDE-centric workflows with reproducible command-line builds and minimal configuration overhead. That's suitable for CI and containerized development.
 
 #### Why use FRDM-KL25Z for the project?
 The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal for experimentation, and it's low cost.
