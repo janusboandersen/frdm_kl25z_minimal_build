@@ -24,5 +24,5 @@ set(CMAKE_CXX_FLAGS_INIT    "${COMMON_FLAGS} -std=c++20")
 set(CMAKE_ASM_FLAGS_INIT    "${COMMON_FLAGS}")
 
 # LINK: C'piler passes argument to Linker: Link newlib-nano C++ runtime, plus C and math libs, stub out syscalls, have linker garbage-collect dead/unreferenced code to prune size
-set(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-Map=firmware.map -specs=nosys.specs -specs=nano.specs -lc -lm -lnosys")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-Wl,-Map=firmware.map,--print-memory-usage -specs=nosys.specs -specs=nano.specs -lc -lm -lnosys")
 
