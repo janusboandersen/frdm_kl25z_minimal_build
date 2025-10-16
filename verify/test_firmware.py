@@ -1,4 +1,3 @@
-from conftest import Symbol, Section
 # Automated firmware verification for KL25Z Cortex-M0+ (ARMv6)
 #
 # Janus, October 2025
