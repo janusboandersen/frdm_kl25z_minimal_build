@@ -1,0 +1,2 @@
+pyelftools==0.32
+pytest==8.4.2
