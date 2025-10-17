@@ -1,0 +1,22 @@
+name: Cross-compile firmware and verify ELF
+on: [push, pull_request]
+
+jobs:
+  firmware:
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/janusboandersen/frdm_kl25z_minimal_build/hello:0.1
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user 0
+    steps:
+      - uses: actions/checkout@v4
+      - name: List files (debug once)
+        run: ls -R
+      - name: Cross-compile and verify
+        run:
+          rm -rf build
+          cmake -S . -B build -G Ninja
+          cmake --build build -v
+          pytest -v verify/ --firmware build/firmware
