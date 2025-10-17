@@ -15,7 +15,7 @@ jobs:
       - name: List files (debug once)
         run: ls -R
       - name: Cross-compile and verify
-        run:
+        run: |
           rm -rf build
           cmake -S . -B build -G Ninja
           cmake --build build -v
