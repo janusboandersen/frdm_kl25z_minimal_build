@@ -12,11 +12,22 @@ jobs:
       options: --user 0
     steps:
       - uses: actions/checkout@v4
-      - name: List files (debug once)
+
+      - name: List files
         run: ls -R
-      - name: Cross-compile and verify
+
+      - name: Configure and cross-compile
         run: |
+          set -euo pipefail
           rm -rf build
           cmake -S . -B build -G Ninja
           cmake --build build -v
-          pytest -v verify/ --firmware build/firmware
+
+      - name: Run firmware verification tests
+        run: |
+          set -euo pipefail
+          pytest -v verify/ --firmware build/firmware --junitxml=elf-verification.xml
+          echo
+          echo "=== Pytest results ==="
+          cat elf-verification.xml
+          echo "=== Pytest done ==="

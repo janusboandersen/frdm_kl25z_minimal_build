@@ -1,6 +1,6 @@
 # Minimal Build for FRDM-KL25Z
 
-![Firmware build and verification](https://github.com/janusboandersen/frdm_kl25z_minimal_build/actions/workflows/ci.yaml/badge.svg)
+![Firmware builds and verified](https://github.com/janusboandersen/frdm_kl25z_minimal_build/actions/workflows/firmware.yaml/badge.svg)
 
 A reproducible, minimal, open-source bring-up pipeline for the FRDM-KL25Z.
 
