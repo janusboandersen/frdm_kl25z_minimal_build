@@ -88,19 +88,19 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
 |       | <!-- spacer -->                               |                                       |               |                                       |
 | 6.1   | Implement minimal user application            | src/main.cpp                          | Planned       | C++20 / C++23                         |
 |       | <!-- spacer -->                               |                                       |               |                                       |
-| 7.1   | Provide firmware verification process         | -                                     | In progress   | See Req. 1.3 for build integration    |
+| 7.1   | Provide firmware verification process         | -                                     | Completed     | See Req. 1.3 for build integration    |
 | 7.2   | Implement manual inspection steps for ELF     | Check post-compile output             | Completed     |                                       |
 | 7.3   | Implement automatic verification of ELF       | verify/test_firmware.py               | Completed     | Pytest, pyelftools                    |
 |       | <!-- spacer -->                               |                                       |               |                                       |
 | 8.1   | Provide project README and documentation      | README.md (this file)                 | Completed     | Compiled                              |
-| 8.2   | Collect primary source documentation          | docs/primary_documentation/           | In progress   | Arm, NXP                              |
+| 8.2   | Collect primary source documentation          | docs/primary_documentation/           | Completed     | Arm, NXP                              |
 | 8.3   | Provide project documentation                 | docs/README_template.md               | In progress   | Req. 8.5 to build                     |
 | 8.4   | Provide key diagrams                          | docs/diagrams/*.mmd, *.md             | In progress   | Mermaid, md                           |
 | 8.5   | Provide README renderer script                | cmake/render_readme.cmake, readme_docs.cmake | Completed     | CMake                                 |
 |       | <!-- spacer -->                               |                                       |               |                                       |
-| 9.1   | Containerize project for portability          | .docker, .devcontainer                | In progress   | Multi-arch (amd64, arm64)             |
+| 9.1   | Containerize project for portability          | .docker, .devcontainer                | Completed     | Multi-arch (amd64, arm64)             |
 |       | <!-- spacer -->                               |                                       |               |                                       |
-| 10.1  | Implement Continuous Integration              | .github/workflows                     | In progress   | GitHub Actions build/verify workflow  |
+| 10.1  | Implement Continuous Integration              | .github/workflows                     | Completed     | GitHub Actions build/verify workflow  |
 
 
 
@@ -113,20 +113,15 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
     - Initialize GPIO clock for PTB18/PTB19 (red/green LEDs).
     - Configure SysTick (System Timer) for 1 kHz ticks.
 	- Toggle one LED at 2 Hz in the SysTick ISR.
-- Add arm-none-eabi-size post-build summary to CMake (print FLASH/SRAM usage).
 
 ##### Week 2
 - Add CMake target flash using pyocd flash $<TARGET_FILE:firmware>.
-- Add CMake target verify that runs python3 check_firmware.py build/firmware.elf.
 - Create a .gdbinit script with target remote, load, monitor reset halt, continue.
-- Extend check_firmware.py:
+- Extend test_firmware.py:
     - Check Flash Config words (FSEC/FOPT) match your intended policy.
 
 ##### Week 3
 - GitHub Actions workflow:
-    - [Install arm-none-eabi-gcc](https://github.com/marketplace/actions/arm-none-eabi-gcc-gnu-arm-embedded-toolchain).
-    - Build firmware (Debug + Release).
-    - Run check_firmware.py.
     - Upload .elf, .hex, .map, and size results as artifacts.
 - Generate a markdown size/memory table appended to README.
 - Add ninja clean target (optional).
@@ -139,7 +134,7 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
 - Explicitly document stance on CMSIS (“minimal by design” or “CMSIS-core only”).
 - Tag repo v1.0 and write a short release note summarizing verification outcomes.
 
-##### Other / future
+##### Other / future ideas
 - QEMU
 - Implement UART0 driver and send build ID over serial.
 - Integrate unit tests for check_firmware.py using pytest.
