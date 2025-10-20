@@ -28,11 +28,11 @@ include(cmake/readme_docs.cmake)
 
 add_executable(firmware
     startup/startup_kl25z.S
-    system/system_MKL25Z4.cpp
+    system/system_kl25z.cpp
     src/main.cpp
 )
 
-set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/kl25z.ld")
+set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/linker_kl25z.ld")
 target_link_options(firmware PRIVATE "-T${LINKER_SCRIPT}")
 
 add_firmware_management(firmware)

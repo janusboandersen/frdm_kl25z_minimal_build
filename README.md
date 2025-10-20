@@ -78,7 +78,7 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
 | 1.3   | Integrate post-compile verification targets   | cmake/firmware_management.cmake       | In progress   | Targets for Req. 7.1-7.3              |
 | 1.4   | Integrate pyOCD flashing and GDB debug targets|                                       | Planned       | PyOCD, GDB                            |
 |       | <!-- spacer -->                               |                                       |               |                                       |
-| 2.1   | Implement linker script for Cortex-M0+        | linker/kl25z.ld                       | Completed     | GNU ld                                |
+| 2.1   | Implement linker script for Cortex-M0+        | linker/linker_kl25z.ld                | Completed     | GNU ld                                |
 |       | <!-- spacer -->                               |                                       |               |                                       |
 | 3.1   | Implement startup code for Cortex-M0+         | startup/startup_kl25z.S               | Completed     | ARMv6-M Thumb-1                       |
 |       | <!-- spacer -->                               |                                       |               |                                       |
@@ -176,12 +176,12 @@ flowchart TD
   %% ---- Bring-up sources ----
   subgraph sources["Bring-up sources"]
     startup_s["startup/startup_kl25z.S"]
-    sysinit_cpp["system/system_MKL25Z4.cpp"]
+    sysinit_cpp["system/system_kl25z.cpp"]
   end
   
   %% ---- User application ----
   subgraph app["Application sources"]
-    main_c["src/main.c"]
+    main_c["src/main.cpp"]
   end
 
   %% ---- Compiler ----
@@ -213,7 +213,7 @@ flowchart TD
 
   %% ---- Link stage ----
   linker["Linker (arm-none-eabi-ld)"]
-  lds["Linker script (.ld)"]
+  lds["Linker script (linker/linker_kl25z.ld)"]
 
   %% ---- Outputs ----
   elf["ELF file (firmware)"]

@@ -78,7 +78,7 @@ The FRDM-KL25Z is a dev/eval board from NXP with on-board OpenSDA. It's ideal fo
 | 1.3   | Integrate post-compile verification targets   | cmake/firmware_management.cmake       | In progress   | Targets for Req. 7.1-7.3              |
 | 1.4   | Integrate pyOCD flashing and GDB debug targets|                                       | Planned       | PyOCD, GDB                            |
 |       | <!-- spacer -->                               |                                       |               |                                       |
-| 2.1   | Implement linker script for Cortex-M0+        | linker/kl25z.ld                       | Completed     | GNU ld                                |
+| 2.1   | Implement linker script for Cortex-M0+        | linker/linker_kl25z.ld                | Completed     | GNU ld                                |
 |       | <!-- spacer -->                               |                                       |               |                                       |
 | 3.1   | Implement startup code for Cortex-M0+         | startup/startup_kl25z.S               | Completed     | ARMv6-M Thumb-1                       |
 |       | <!-- spacer -->                               |                                       |               |                                       |
